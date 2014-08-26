@@ -16,39 +16,52 @@
         <script type="text/javascript">
             if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
             var area, section, number;
-
+            var cubes = [];
             var container, stats;
             var camera, controls, scene, renderer;
             var cube, plane;
             var cross;
 
-            var m = window.location.hash.match(/#(\d+)-(\d+)-(\d+)/)
-            if (m != null && m.length == 4) {
-                area = m[1];
-                section = m[2];
-                number = m[3];
-                var addr = area + "-" + section + "-" + number;
-                $.ajax({
-                    dataType: "json",
-                    url: "maps/" + area + ".json", 
-                    success: function(data) {
-                        var addresses = data["addresses"];
+            $(window).on('hashchange',function(){ 
+                loadHash();
+            });
 
-                        for (var i = 0; i < addresses.length; i++) {
-                            if (addresses[i]["address"] === addr) {
-                                var voxels = JSON.parse(addresses[i]["voxel"])["voxels"];
-                                loadModel(scene, voxels);
-                                render();
-                            }
-                        }
-                    }
-                })
-            }
-
+            loadHash();
             init();
             animate();
 
+            function loadHash() {
+                var m = window.location.hash.match(/#(\d+)-(\d+)-(\d+)/)
+                if (m != null && m.length == 4) {
+                    area = m[1];
+                    section = m[2];
+                    number = m[3];
+                    var addr = area + "-" + section + "-" + number;
+                    $.ajax({
+                        dataType: "json",
+                        url: "maps/" + area + ".json", 
+                        success: function(data) {
+                            var addresses = data["addresses"];
+
+                            for (var i = 0; i < addresses.length; i++) {
+                                if (addresses[i]["address"] === addr) {
+                                    var voxels = JSON.parse(addresses[i]["voxel"])["voxels"];
+                                    loadModel(scene, voxels);
+                                    render();
+                                    break;
+                                }
+                            }
+                        }
+                    })
+                }
+            }
+
             function loadModel(scene, voxels) {
+                for (var i = 0; i < cubes.length; i++) {
+                    scene.remove(cubes[i]);
+                }
+                cubes = [];
+
                 // 80 x 55
                 for (var v = 0; v < voxels.length; v++) {
                     var voxel = voxels[v];
@@ -63,6 +76,7 @@
                     cube.position.y = voxel["y"] * 10 + voxel["h"] * 5;
                     cube.position.z = - (voxel["z"] * 10 + voxel["d"] * 5) + 55 * 5;
                     scene.add( cube );
+                    cubes.push(cube);
                 }
                 
             }
@@ -70,7 +84,8 @@
             function init() {
 
                 camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
-                camera.position.z = 500;
+                camera.position.z = 600;
+                camera.position.y = 400;
 
                 controls = new THREE.TrackballControls( camera );
 
@@ -102,19 +117,21 @@
                 // plane = new THREE.Mesh( geometry, material );
                 // scene.add( plane );
 
-                // lights
 
-                light = new THREE.DirectionalLight( 0xffffff );
-                light.position.set( 40, 40, 40 );
+                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
+                light.position.set( -800, 0, -300 );
                 scene.add( light );
 
-                light = new THREE.PointLight( 0xffffff );
-                light.position.set( 0, 0, 100 );
+                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
+                light.position.set( 120, -10, 450 );
                 scene.add( light );
 
-                light = new THREE.AmbientLight( 0x101010 );
-                light.position.set(0, 0, 0);
+                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
+                light.position.set( 600, 0, -300 );
                 scene.add( light );
+
+                light = new THREE.HemisphereLight(0xffffff, 0x333333, 0.5);
+                scene.add(light);
 
 
                 // renderer
