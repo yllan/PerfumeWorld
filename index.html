@@ -116,7 +116,10 @@
 
                 // plane = new THREE.Mesh( geometry, material );
                 // scene.add( plane );
-
+                
+                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
+                light.position.set( 50, 800, -20 );
+                scene.add( light );
 
                 light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
                 light.position.set( -800, 0, -300 );
