@@ -29,9 +29,11 @@
                 number = m[3];
                 var addr = area + "-" + section + "-" + number;
                 $.ajax({
+                    dataType: "json",
                     url: "maps/" + area + ".json", 
                     success: function(data) {
-                        var addresses = JSON.parse(data)["addresses"];
+                        var addresses = data["addresses"];
+
                         for (var i = 0; i < addresses.length; i++) {
                             if (addresses[i]["address"] === addr) {
                                 var voxels = JSON.parse(addresses[i]["voxel"])["voxels"];
