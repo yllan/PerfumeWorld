@@ -45,6 +45,7 @@
 
                             for (var i = 0; i < addresses.length; i++) {
                                 if (addresses[i]["address"] === addr) {
+                                    document.title = "Perfume World " + addr;
                                     var voxels = JSON.parse(addresses[i]["voxel"])["voxels"];
                                     loadModel(scene, voxels);
                                     render();
