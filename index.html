@@ -70,7 +70,7 @@
                         geometry.faces[ i ].color.setHex( voxel["color"] );
                         geometry.faces[ i + 1 ].color.setHex( voxel["color"] );
                     }
-                    var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(voxel["color"]), shininess: 30, shading: THREE.SmoothShading } );
+                    var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(voxel["color"]), ambient: new THREE.Color(voxel["color"]), shininess: 25, shading: THREE.SmoothShading } );
                     cube = new THREE.Mesh( geometry, material );
                     cube.position.x = voxel["x"] * 10 + voxel["w"] * 5 - 80 * 5;
                     cube.position.y = voxel["y"] * 10 + voxel["h"] * 5;
@@ -117,10 +117,13 @@
                 // plane = new THREE.Mesh( geometry, material );
                 // scene.add( plane );
                 
-                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
-                light.position.set( 50, 800, -20 );
+                light = new THREE.PointLight( 0xffffff, 0.9, 1200 );
+                light.position.set( 0, 500, 0 );
                 scene.add( light );
 
+                light = new THREE.AmbientLight( 0x999999 );
+                scene.add( light );
+/*
                 light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
                 light.position.set( -800, 0, -300 );
                 scene.add( light );
@@ -135,7 +138,7 @@
 
                 light = new THREE.HemisphereLight(0xffffff, 0x333333, 0.5);
                 scene.add(light);
-
+*/
 
                 // renderer
 
