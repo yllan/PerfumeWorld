@@ -3,17 +3,66 @@
     <head>
         <meta charset="utf-8">
         <title>Perfume World Viewer</title>
-        <style>canvas { width: 100%; height: 100% }</style>
+        <style>
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+#header {
+    position: absolute;
+    width: 100%;
+    padding-top: 30px;
+    font-size: 30px;
+    font-weight: 200;
+    text-align: center;
+    z-index: 10;
+}
+
+input {
+    font-size: 30px;
+}
+
+canvas {
+    width: 100%; 
+    height: 100%;
+    z-index: 0;
+}
+
+#container {
+    position: absolute;
+    height: auto;
+    width: auto;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 1;
+}
+        </style>
     </head>
     <body>
-    <a href="https://github.com/yllan/PerfumeWorld"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://camo.githubusercontent.com/121cd7cbdc3e4855075ea8b558508b91ac463ac2/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f6c6566745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_left_green_007200.png"></a>
-        <div id="container"></div>
+        <div id="container">
+            <a href="https://github.com/yllan/PerfumeWorld"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
+            <div id="header"><label>Perfume-World Address</label><input type="text" id="addr" name="addr" placeholder="2-2-8" size="12"></div>
+        </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
         <script src="js/controls/TrackballControls.js"></script>
         <script src="js/Detector.js"></script>
         <script type="text/javascript">
+            $('#addr').bind('enterKey', function(e) {
+                window.location.hash = "#" + $('#addr').val();
+            });
+
+            $('#addr').keyup(function(e) {
+                if (e.keyCode == 13) {
+                    $(this).trigger('enterKey');
+                }
+            });
+
             if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
             var area, section, number;
             var cubes = [];
@@ -21,60 +70,73 @@
             var camera, controls, scene, renderer;
             var cube, plane;
             var cross;
+            var currentArea, areaAddresses;
 
             $(window).on('hashchange',function(){ 
-                loadHash();
+                loadHash(window.location.hash);
             });
 
-            loadHash();
+            loadHash(window.location.hash);
             init();
             animate();
 
-            function loadHash() {
-                var m = window.location.hash.match(/#(\d+)-(\d+)-(\d+)/)
+            function loadHash(hash) {
+                var m = hash.match(/#(\d+)-(\d+)-(\d+)/)
                 if (m != null && m.length == 4) {
                     area = m[1];
                     section = m[2];
                     number = m[3];
+                    $('#addr').val(area + "-" + section + "-" + number);
+                    loadAddress(area, section, number);
+                }
+            }
+
+            function loadAddress(area, section, number) {
+                if (area == currentArea) {
                     var addr = area + "-" + section + "-" + number;
+                    clearCurrentCubes();
+                    for (var v = areaAddresses.length - 1; v >= 0; v--) {
+                        var d = areaAddresses[v];
+                        if (d["address"] == addr) {
+                            document.title = "Perfume World " + addr + ' | ' + d.name;
+                            var voxels = JSON.parse(d["voxel"])["voxels"];
+                            loadModel(scene, voxels);
+                            render();
+                            break;
+                        }
+                    }
+                } else {
                     $.ajax({
                         dataType: "json",
                         url: "maps/" + area + ".json", 
                         success: function(data) {
-                            var addresses = data["addresses"];
-
-                            for (var i = 0; i < addresses.length; i++) {
-                                if (addresses[i]["address"] === addr) {
-                                    document.title = "Perfume World " + addr;
-                                    var voxels = JSON.parse(addresses[i]["voxel"])["voxels"];
-                                    loadModel(scene, voxels);
-                                    render();
-                                    break;
-                                }
-                            }
+                            areaAddresses = data["addresses"];
+                            currentArea = area;
+                            loadAddress(area, section, number);
                         }
-                    })
+                    });
                 }
             }
 
-            function loadModel(scene, voxels) {
+            function clearCurrentCubes() {
                 for (var i = 0; i < cubes.length; i++) {
                     scene.remove(cubes[i]);
                 }
                 cubes = [];
+            }
+
+            function loadModel(scene, voxels) {
+                clearCurrentCubes();
 
                 // 80 x 55
-                for (var v = 0; v < voxels.length; v++) {
+                var length = voxels.length;
+                for (var v = 0; v < length; v++) {
                     var voxel = voxels[v];
                     var geometry = new THREE.BoxGeometry( voxel["w"] * 10, voxel["h"] * 10, voxel["d"] * 10 );
-                    for ( var i = 0; i < geometry.faces.length; i += 2 ) {
-                        geometry.faces[ i ].color.setHex( voxel["color"] );
-                        geometry.faces[ i + 1 ].color.setHex( voxel["color"] );
-                    }
                     var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(voxel["color"]), ambient: new THREE.Color(voxel["color"]), shininess: 25, shading: THREE.SmoothShading } );
                     cube = new THREE.Mesh( geometry, material );
                     cube.position.x = voxel["x"] * 10 + voxel["w"] * 5 - 80 * 5;
-                    cube.position.y = voxel["y"] * 10 + voxel["h"] * 5;
+                    cube.position.y = voxel["y"] * 10 + voxel["h"] * 5 - 10 * 10;
                     cube.position.z = - (voxel["z"] * 10 + voxel["d"] * 5) + 55 * 5;
                     scene.add( cube );
                     cubes.push(cube);
@@ -83,12 +145,17 @@
             }
 
             function init() {
+                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+                container = document.getElementById( 'container' );
+                container.appendChild( renderer.domElement );
 
                 camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2000 );
                 camera.position.z = 600;
                 camera.position.y = 400;
 
-                controls = new THREE.TrackballControls( camera );
+                controls = new THREE.TrackballControls( camera, renderer.domElement );
 
                 controls.rotateSpeed = 2.0;
                 controls.zoomSpeed = 1.2;
@@ -97,7 +164,7 @@
                 controls.noZoom = false;
                 controls.noPan = false;
 
-                controls.staticMoving = true;
+                controls.staticMoving = false;
                 controls.dynamicDampingFactor = 0.3;
 
                 controls.keys = [ 65, 83, 68 ];
@@ -124,36 +191,8 @@
 
                 light = new THREE.AmbientLight( 0x999999 );
                 scene.add( light );
-/*
-                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
-                light.position.set( -800, 0, -300 );
-                scene.add( light );
-
-                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
-                light.position.set( 120, -10, 450 );
-                scene.add( light );
-
-                light = new THREE.PointLight( 0xffffff, 1.0, 1200 );
-                light.position.set( 600, 0, -300 );
-                scene.add( light );
-
-                light = new THREE.HemisphereLight(0xffffff, 0x333333, 0.5);
-                scene.add(light);
-*/
-
-                // renderer
-
-                renderer = new THREE.WebGLRenderer( { antialias: true } );
-                // renderer.setClearColor( scene.fog.color, 1 );
-                renderer.setSize( window.innerWidth, window.innerHeight );
-
-                container = document.getElementById( 'container' );
-                container.appendChild( renderer.domElement );
 
                 window.addEventListener( 'resize', onWindowResize, false );
-
-                //
-
                 render();
 
             }
