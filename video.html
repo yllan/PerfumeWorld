@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Perfume World Viewer | Video</title>
+        <style>
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+#header {
+    position: absolute;
+    width: 100%;
+    padding-top: 30px;
+    font-size: 30px;
+    font-weight: 200;
+    text-align: center;
+    z-index: 10;
+}
+
+input {
+    font-size: 30px;
+}
+
+canvas {
+    width: 100%; 
+    height: 100%;
+    z-index: 0;
+}
+
+#fork-me {
+    z-index: 20;
+}
+
+#container {
+    position: absolute;
+    height: auto;
+    width: auto;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 1;
+}
+
+#profile {
+    position: absolute;
+    height: 60px;
+    width: 300px;
+    bottom: 10px;
+    left: 10px;
+}
+
+#avatar {
+    float: left;
+}
+#username {
+    padding-left: 10px;
+}
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <a href="https://github.com/yllan/PerfumeWorld"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png" id="fork-me"></a>
+        </div>
+
+        <script src="three.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="js/controls/TrackballControls.js"></script>
+        <script src="js/Detector.js"></script>
+        <script type="text/javascript">
+
+            if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+            var area, section, number;
+            var cubes = [];
+            var container;
+            var camera, controls, scene, renderer;
+            var cube, plane;
+            var cross;
+            var currentArea, areaAddresses;
+            var currentFrame = 1;
+            var maxFrame = 428;
+
+            init();
+            loadFrame();
+            animate();
+
+            function fillVoxel(x, y, z, w, h, d, color) {
+                var geometry = new THREE.BoxGeometry( w * 10, h * 10, d * 10 );
+                var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(color), ambient: new THREE.Color(color), shininess: 25, shading: THREE.SmoothShading } );
+                cube = new THREE.Mesh( geometry, material );
+                cube.position.x = x * 10 + w * 5 - 80 * 5;
+                cube.position.y = y * 10 + h * 5 - 10 * 10;
+                cube.position.z = - (z * 10 + d * 5) + 60 * 5;
+                scene.add( cube );
+                cubes.push(cube);
+            }
+
+            function drawProgress() {
+                var barW = 3;
+                var barX = 1 + Math.round((80 - 2 - barW) * currentFrame / maxFrame);
+
+                var bgColor = 0x606060;
+
+                fillVoxel(0, 0, 58 - 1 - 5, 1, 1, 5, bgColor);
+                fillVoxel(barX, 0, 58 - 7, barW, 2, 7, 0x909090);
+                fillVoxel(79, 0, 58 - 1 - 5, 1, 1, 5, bgColor);
+                if (barX > 1) {
+                    fillVoxel(1, 0, 58 - 1 - 1, barX - 1, 1, 1, bgColor),
+                    fillVoxel(1, 0, 58 - 1 - 5, barX - 1, 1, 1, bgColor),
+                    fillVoxel(1, 0, 58 - 1 - 1 - 3, barX - 1, 1, 3, 0x990000);
+                }
+
+                if (barX + barW < 79) {
+                    fillVoxel(barX + barW, 0, 58 - 1 - 1, 79 - barX - barW, 1, 1, bgColor),
+                    fillVoxel(barX + barW, 0, 58 - 1 - 5, 79 - barX - barW, 1, 1, bgColor),
+                    fillVoxel(barX + barW, 0, 58 - 1 - 1 - 3, 79 - barX - barW, 1, 3, 0x303030)
+                }
+            }
+
+            function loadFrame() {
+                var filename = "display/display" + ("00" + currentFrame).slice(-3) + ".json";
+                $.ajax({
+                    dataType: "json",
+                    url: filename, 
+                    success: function(data) {
+                        clearCurrentCubes();
+                        for (var y = 0; y < 45; y++) {
+                            for (var x = 0; x < 80; x++) {
+                                fillVoxel(x, 44 - y, 59, 1, 1, 1, data[y][x]);
+                            }
+                        }
+                        drawProgress();
+
+                        render();
+                        currentFrame += 1;
+                        if (currentFrame > maxFrame) {
+                            currentFrame = 1;
+                        }
+                        setTimeout('requestAnimationFrame(loadFrame)', 1000);
+                    }
+                });
+            }
+
+            function clearCurrentCubes() {
+                for (var i = 0; i < cubes.length; i++) {
+                    scene.remove(cubes[i]);
+                }
+                cubes = [];
+            }
+
+            // function loadModel(scene, voxels) {
+            //     clearCurrentCubes();
+
+            //     // 80 x 55
+            //     var length = voxels.length;
+            //     for (var v = 0; v < length; v++) {
+            //         var voxel = voxels[v];
+            //         var geometry = new THREE.BoxGeometry( voxel["w"] * 10, voxel["h"] * 10, voxel["d"] * 10 );
+            //         var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(voxel["color"]), ambient: new THREE.Color(voxel["color"]), shininess: 25, shading: THREE.SmoothShading } );
+            //         cube = new THREE.Mesh( geometry, material );
+            //         cube.position.x = voxel["x"] * 10 + voxel["w"] * 5 - 80 * 5;
+            //         cube.position.y = voxel["y"] * 10 + voxel["h"] * 5 - 10 * 10;
+            //         cube.position.z = - (voxel["z"] * 10 + voxel["d"] * 5) + 55 * 5;
+            //         scene.add( cube );
+            //         cubes.push(cube);
+            //     }
+                
+            // }
+
+            function init() {
+                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+                container = document.getElementById( 'container' );
+                container.appendChild( renderer.domElement );
+
+                camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2000 );
+                camera.position.z = 600;
+                camera.position.y = 400;
+
+                controls = new THREE.TrackballControls( camera, renderer.domElement );
+
+                controls.rotateSpeed = 2.0;
+                controls.zoomSpeed = 1.2;
+                controls.panSpeed = 0.8;
+
+                controls.noZoom = false;
+                controls.noPan = false;
+
+                controls.staticMoving = false;
+                controls.dynamicDampingFactor = 0.3;
+
+                controls.keys = [ 65, 83, 68 ];
+
+                controls.addEventListener( 'change', render );
+
+                // world
+
+                scene = new THREE.Scene();
+                // scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+                // Plane
+
+                // var geometry = new THREE.PlaneGeometry( 200, 200 );
+                // geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+                // var material = new THREE.MeshBasicMaterial( { color: 0xe0e0e0, overdraw: 0.5 } );
+
+                // plane = new THREE.Mesh( geometry, material );
+                // scene.add( plane );
+                
+                light = new THREE.PointLight( 0xffffff, 0.9, 1200 );
+                light.position.set( 0, 500, 0 );
+                scene.add( light );
+
+                light = new THREE.AmbientLight( 0x999999 );
+                scene.add( light );
+
+                window.addEventListener( 'resize', onWindowResize, false );
+                render();
+
+            }
+
+            function onWindowResize() {
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+                controls.handleResize();
+
+                render();
+
+            }
+
+            function animate() {
+                requestAnimationFrame( animate );
+                controls.update();
+            }
+
+            function render() {
+                renderer.render( scene, camera );
+            }
+            //
+        </script>
+    </body>
+</html>
