@@ -89,7 +89,7 @@ canvas {
 
             function fillVoxel(x, y, z, w, h, d, color) {
                 var geometry = new THREE.BoxGeometry( w * 10, h * 10, d * 10 );
-                var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(color), ambient: new THREE.Color(color), shininess: 25, shading: THREE.SmoothShading } );
+                var material = new THREE.MeshLambertMaterial( { color: new THREE.Color(color), ambient: new THREE.Color(color) } );
                 cube = new THREE.Mesh( geometry, material );
                 cube.position.x = x * 10 + w * 5 - 80 * 5;
                 cube.position.y = y * 10 + h * 5 - 10 * 10;
@@ -151,27 +151,12 @@ canvas {
                 cubes = [];
             }
 
-            // function loadModel(scene, voxels) {
-            //     clearCurrentCubes();
-
-            //     // 80 x 55
-            //     var length = voxels.length;
-            //     for (var v = 0; v < length; v++) {
-            //         var voxel = voxels[v];
-            //         var geometry = new THREE.BoxGeometry( voxel["w"] * 10, voxel["h"] * 10, voxel["d"] * 10 );
-            //         var material = new THREE.MeshPhongMaterial( { color: new THREE.Color(voxel["color"]), ambient: new THREE.Color(voxel["color"]), shininess: 25, shading: THREE.SmoothShading } );
-            //         cube = new THREE.Mesh( geometry, material );
-            //         cube.position.x = voxel["x"] * 10 + voxel["w"] * 5 - 80 * 5;
-            //         cube.position.y = voxel["y"] * 10 + voxel["h"] * 5 - 10 * 10;
-            //         cube.position.z = - (voxel["z"] * 10 + voxel["d"] * 5) + 55 * 5;
-            //         scene.add( cube );
-            //         cubes.push(cube);
-            //     }
-                
-            // }
-
             function init() {
-                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                if (window.WebGLRenderingContext)
+                    renderer = new THREE.WebGLRenderer();
+                else
+                    renderer = new THREE.CanvasRenderer();
+                // renderer = new THREE.WebGLRenderer( { antialias: true } );
                 renderer.setSize( window.innerWidth, window.innerHeight );
 
                 container = document.getElementById( 'container' );
